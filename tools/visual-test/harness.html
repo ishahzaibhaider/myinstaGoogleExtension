@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Infinity FX harness</title>
+<style>body{margin:0;background:#111;color:#ddd;font:12px monospace} video{display:block;width:640px;height:360px;background:#000} #log{padding:6px;white-space:pre-wrap}</style>
+</head>
+<body>
+<video id="v" autoplay muted playsinline></video>
+<div id="log"></div>
+<script>
+  const log = (m) => { document.getElementById('log').textContent += m + '\n'; };
+  window.__frames = 0;
+  (async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 360 }, audio: false });
+      const v = document.getElementById('v');
+      v.srcObject = stream;
+      const t = stream.getVideoTracks()[0];
+      log('track: ' + t.label + ' ' + JSON.stringify(t.getSettings()));
+      const tick = () => { window.__frames++; v.requestVideoFrameCallback(tick); };
+      v.requestVideoFrameCallback(tick);
+    } catch (e) { log('gUM failed: ' + e); }
+  })();
+</script>
+</body>
+</html>

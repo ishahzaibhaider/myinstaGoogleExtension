@@ -1,0 +1,13 @@
+{
+  "name": "infinity-fx",
+  "version": "1.1.0",
+  "private": true,
+  "description": "Chrome extension: superhero hand-gesture effects for your webcam in Instagram calls, Google Meet and any web video call.",
+  "license": "MIT",
+  "scripts": {
+    "check": "sh scripts/check.sh",
+    "package": "sh scripts/package.sh",
+    "test:visual": "node tools/visual-test/run.js tools/visual-test/out --cpu 3000 2000:portal 2500 600:snap 4000"
+  },
+  "engines": { "node": ">=20" }
+}

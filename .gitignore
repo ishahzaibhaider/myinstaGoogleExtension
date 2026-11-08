@@ -1,0 +1,17 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Build output
+dist/
+
+# Visual test artefacts (the clip may contain real people — never commit it)
+tools/visual-test/*.y4m
+tools/visual-test/out*/
+tools/visual-test/*.log
+
+# Private reference material kept locally, not part of this project
+dev inspiration/
+inspiration video/

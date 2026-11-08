@@ -1,0 +1,83 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Infinity FX</title>
+<style>
+  :root { --bg:#0d0a12; --card:#17121f; --line:#2a2235; --text:#f1ebf7; --dim:#9d93ab; --gold:#ffc94d; --gold2:#ff8f2e; }
+  * { box-sizing:border-box; }
+  body { margin:0; width:340px; background:var(--bg); color:var(--text); font:13px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  header { padding:14px 16px 12px; display:flex; align-items:center; gap:12px; border-bottom:1px solid var(--line);
+    background: radial-gradient(120% 140% at 0% 0%, rgba(255,143,46,.18), transparent 55%), radial-gradient(100% 120% at 100% 0%, rgba(168,60,255,.16), transparent 55%); }
+  header img { width:34px; height:34px; }
+  header h1 { font-size:15px; margin:0; letter-spacing:.3px; }
+  header p { margin:1px 0 0; color:var(--dim); font-size:11.5px; }
+  section { padding:8px 16px; border-bottom:1px solid var(--line); }
+  .row { display:flex; align-items:center; justify-content:space-between; padding:7px 0; gap:12px; }
+  .row .t { display:flex; align-items:center; gap:10px; min-width:0; }
+  .row .ic { width:30px; height:30px; flex:none; border-radius:8px; display:grid; place-items:center; font-size:16px; background:var(--card); border:1px solid var(--line); }
+  .row b { font-weight:600; display:block; }
+  .row small { display:block; color:var(--dim); font-size:11.5px; }
+  .switch { position:relative; width:38px; height:22px; flex:none; }
+  .switch input { opacity:0; width:0; height:0; }
+  .slider { position:absolute; inset:0; background:#352c42; border-radius:22px; cursor:pointer; transition:.15s; }
+  .slider:before { content:""; position:absolute; width:16px; height:16px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.15s; }
+  input:checked + .slider { background:linear-gradient(90deg,var(--gold2),var(--gold)); }
+  input:checked + .slider:before { transform:translateX(16px); background:#1a1320; }
+  select { font:inherit; color:var(--text); background:var(--card); border:1px solid var(--line); border-radius:7px; padding:5px 9px; cursor:pointer; }
+  .master { background:var(--card); margin:10px 16px 2px; border:1px solid var(--line); border-radius:12px; padding:4px 12px; }
+  .note { color:var(--gold); font-size:11.5px; margin:0 16px 8px; display:none; }
+  .hint { color:var(--dim); font-size:11.5px; padding:10px 16px 14px; }
+  kbd { background:var(--card); border:1px solid var(--line); border-radius:4px; padding:0 4px; font-size:11px; }
+  .row.sub { padding-left:40px; }
+  h2 { font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--dim); margin:6px 0 2px; font-weight:600; }
+</style>
+</head>
+<body>
+<header>
+  <img src="icons/icon48.png" alt="">
+  <div><h1>Infinity FX</h1><p>Avengers effects for Instagram &amp; Meet calls</p></div>
+</header>
+
+<div class="master">
+  <div class="row"><div class="t"><div><b>Effects on</b><small>Off sends your plain camera</small></div></div>
+    <label class="switch"><input type="checkbox" id="enabled"><span class="slider"></span></label></div>
+</div>
+<div class="note" id="rejoin">Turn your camera off and on in the call (or reload the tab) to apply.</div>
+
+<section>
+  <h2>Gestures</h2>
+  <div class="row"><div class="t"><div class="ic">🫰</div><div><b>Snap → turn to dust</b><small>Hold the snap pose: the Gauntlet forms. Snap again to return.</small></div></div>
+    <label class="switch"><input type="checkbox" id="snap"><span class="slider"></span></label></div>
+  <div class="row"><div class="t"><div class="ic">☝️</div><div><b>Draw a circle → portal</b><small>Index finger only. It grows behind you. Circle again to close.</small></div></div>
+    <label class="switch"><input type="checkbox" id="portal"><span class="slider"></span></label></div>
+  <div class="row sub"><div class="t"><div><b>Portal goes to</b><small id="destNote">Shanghai skyline at night</small></div></div>
+    <select id="portalDest"><option value="shanghai">Shanghai</option><option value="custom">My picture…</option><option value="mirror">Mirror Dimension</option></select></div>
+  <input type="file" id="destFile" accept="image/*" hidden>
+  <div class="row"><div class="t"><div class="ic">🖐️</div><div><b>Open palm → repulsor</b><small>Hold it to charge, push at the camera to fire.</small></div></div>
+    <label class="switch"><input type="checkbox" id="repulsor"><span class="slider"></span></label></div>
+  <div class="row"><div class="t"><div class="ic">✊</div><div><b>Fist above head → Thor</b><small>Lightning strikes your fist, eyes glow.</small></div></div>
+    <label class="switch"><input type="checkbox" id="thor"><span class="slider"></span></label></div>
+  <div class="row"><div class="t"><div class="ic">✌️</div><div><b>Peace sign → hologram</b><small>Hold a moment to toggle Stark hologram mode.</small></div></div>
+    <label class="switch"><input type="checkbox" id="hologram"><span class="slider"></span></label></div>
+</section>
+
+<section>
+  <h2>Options</h2>
+  <div class="row"><div class="t"><div><b>Portal entrance</b><small>Arrive through a portal when your camera starts</small></div></div>
+    <label class="switch"><input type="checkbox" id="entrance"><span class="slider"></span></label></div>
+  <div class="row"><div class="t"><div><b>Snap sensitivity</b><small>High if snaps get missed, Low if it misfires</small></div></div>
+    <select id="sensitivity"><option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option></select></div>
+  <div class="row"><div class="t"><div><b>Un-mirror my self-view</b><small>See exactly what the other side sees</small></div></div>
+    <label class="switch"><input type="checkbox" id="unmirror"><span class="slider"></span></label></div>
+  <div class="row"><div class="t"><div><b>Show tracking (debug)</b><small>Others see it too — turn off after</small></div></div>
+    <label class="switch"><input type="checkbox" id="debug"><span class="slider"></span></label></div>
+</section>
+
+<div class="hint">
+  Keyboard backups in the call tab — <kbd>Alt</kbd>+<kbd>Shift</kbd>+ <kbd>S</kbd> snap · <kbd>P</kbd> portal · <kbd>R</kbd> repulsor · <kbd>T</kbd> Thor · <kbd>H</kbd> hologram · <kbd>E</kbd> leave / arrive through a portal.<br>
+  Tip: step out of frame for 2 seconds after the camera starts so it learns the room behind you.
+</div>
+<script src="popup.js"></script>
+</body>
+</html>
