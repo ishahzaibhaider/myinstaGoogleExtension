@@ -15,16 +15,18 @@ It runs entirely on your machine. Hand and body tracking use Google's MediaPipe 
 
 | Gesture | Effect |
 |---|---|
-| 🫰 **Hold the snap pose** | An Infinity Gauntlet glows on your hand, with all six stones on your knuckles and palm |
+| 🫰 **Hold the snap pose** | The six Infinity Stones light up on your knuckles and palm, and the snap is now armed |
 | 🫰 **Snap** | White flash and shockwave, then you dissolve into drifting ash. The room stays and you are fully invisible. Snap again to reassemble |
 | ☝️ **Draw a circle with your index finger** | A sparking portal pops open, glides behind you and grows into a huge window onto **Shanghai at night**, your own picture, or the Mirror Dimension. Circle again to close |
 | 🖐️ **Hold an open palm toward the camera** | A repulsor charges in your palm and an arc reactor lights up on your chest |
 | 🖐️ **Push the palm at the camera** | Repulsor blast with a flash and screen shake |
 | ✊ **Raise a fist above your head** | Lightning strikes your fist, arcs crawl over your outline and your eyes glow |
 | ✌️ **Hold a peace sign** | Toggles a flickering blue hologram of you, projected into your room |
+| 🤞 **Cross your index and middle finger, hold** | **Jujutsu Kaisen: Domain Expansion.** A black barrier bursts from your hand and the room becomes Gojo's Infinite Void, a cosmic rush of light. Your eyes burn blue and 領域展開 / 無量空処 slams in. Cross again to collapse it |
+| 🙌 **Lift both open hands upward** | **Solo Leveling: ARISE.** The picture goes violet, a System window pops up, and shadow soldiers with burning eyes rise from the floor behind you while a shadow aura pours off you |
 | 🎥 **Turn your camera on** | You arrive through a portal: a sling ring sparks up in the dark, then opens on you |
 
-Each effect can be switched off in the popup. Each one also has a keyboard backup: <kbd>Alt</kbd>+<kbd>Shift</kbd> with <kbd>S</kbd> snap, <kbd>P</kbd> portal, <kbd>R</kbd> repulsor, <kbd>T</kbd> Thor, <kbd>H</kbd> hologram, <kbd>E</kbd> leave or arrive through a portal.
+Each effect can be switched off in the popup. Each one also has a keyboard backup: <kbd>Alt</kbd>+<kbd>Shift</kbd> with <kbd>S</kbd> snap, <kbd>P</kbd> portal, <kbd>R</kbd> repulsor, <kbd>T</kbd> Thor, <kbd>H</kbd> hologram, <kbd>E</kbd> leave or arrive through a portal, <kbd>G</kbd> Domain Expansion, <kbd>A</kbd> ARISE.
 
 ## Install
 
@@ -37,7 +39,7 @@ Works in Chrome or any Chromium browser, version 116 or newer. On Instagram, use
 
 ## Tips for the best result
 
-- **Let it learn your room.** Step out of frame for two seconds after the camera starts. The vanish and hologram effects reveal what's behind you, and that only works for spots it has seen.
+- **Let it learn your room.** Step out of frame for about three seconds once. Infinity FX saves a photo of your empty room and reuses it, so the vanish shows the real wall behind you, not a guess. You can clear it with **Forget** in the popup if you move the camera.
 - **Good light, whole hand in view.** Gestures come from hand tracking. Turn on **Show tracking** in the popup to see what it detects, and note that the other side sees it too.
 - **Turn off the call's own background blur.** It runs after Infinity FX and blurs the effects as well.
 - **Snaps missed or misfiring?** Set snap sensitivity to High or Low. The mic is also used, locally, to hear the click of a snap.

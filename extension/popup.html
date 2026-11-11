@@ -24,6 +24,7 @@
   .slider:before { content:""; position:absolute; width:16px; height:16px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.15s; }
   input:checked + .slider { background:linear-gradient(90deg,var(--gold2),var(--gold)); }
   input:checked + .slider:before { transform:translateX(16px); background:#1a1320; }
+  button { font:inherit; color:var(--text); background:var(--card); border:1px solid var(--line); border-radius:7px; padding:5px 10px; cursor:pointer; }
   select { font:inherit; color:var(--text); background:var(--card); border:1px solid var(--line); border-radius:7px; padding:5px 9px; cursor:pointer; }
   .master { background:var(--card); margin:10px 16px 2px; border:1px solid var(--line); border-radius:12px; padding:4px 12px; }
   .note { color:var(--gold); font-size:11.5px; margin:0 16px 8px; display:none; }
@@ -47,7 +48,7 @@
 
 <section>
   <h2>Gestures</h2>
-  <div class="row"><div class="t"><div class="ic">🫰</div><div><b>Snap → turn to dust</b><small>Hold the snap pose: the Gauntlet forms. Snap again to return.</small></div></div>
+  <div class="row"><div class="t"><div class="ic">🫰</div><div><b>Snap → turn to dust</b><small>Hold the snap pose: the stones light up. Snap again to return.</small></div></div>
     <label class="switch"><input type="checkbox" id="snap"><span class="slider"></span></label></div>
   <div class="row"><div class="t"><div class="ic">☝️</div><div><b>Draw a circle → portal</b><small>Index finger only. It grows behind you. Circle again to close.</small></div></div>
     <label class="switch"><input type="checkbox" id="portal"><span class="slider"></span></label></div>
@@ -63,9 +64,19 @@
 </section>
 
 <section>
+  <h2>Anime</h2>
+  <div class="row"><div class="t"><div class="ic">🤞</div><div><b>Crossed fingers → Domain Expansion</b><small>Gojo's Infinite Void. Cross index + middle, hold. Again to close.</small></div></div>
+    <label class="switch"><input type="checkbox" id="domain"><span class="slider"></span></label></div>
+  <div class="row"><div class="t"><div class="ic">🙌</div><div><b>Lift both hands → ARISE</b><small>Shadow army rises behind you (Solo Leveling).</small></div></div>
+    <label class="switch"><input type="checkbox" id="arise"><span class="slider"></span></label></div>
+</section>
+
+<section>
   <h2>Options</h2>
   <div class="row"><div class="t"><div><b>Portal entrance</b><small>Arrive through a portal when your camera starts</small></div></div>
     <label class="switch"><input type="checkbox" id="entrance"><span class="slider"></span></label></div>
+  <div class="row"><div class="t"><div><b>Saved empty room</b><small id="roomNote">Step out of frame for 3 s and it saves your room</small></div></div>
+    <button id="forgetRoom">Forget</button></div>
   <div class="row"><div class="t"><div><b>Snap sensitivity</b><small>High if snaps get missed, Low if it misfires</small></div></div>
     <select id="sensitivity"><option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option></select></div>
   <div class="row"><div class="t"><div><b>Un-mirror my self-view</b><small>See exactly what the other side sees</small></div></div>
@@ -75,7 +86,7 @@
 </section>
 
 <div class="hint">
-  Keyboard backups in the call tab — <kbd>Alt</kbd>+<kbd>Shift</kbd>+ <kbd>S</kbd> snap · <kbd>P</kbd> portal · <kbd>R</kbd> repulsor · <kbd>T</kbd> Thor · <kbd>H</kbd> hologram · <kbd>E</kbd> leave / arrive through a portal.<br>
+  Keyboard backups in the call tab — <kbd>Alt</kbd>+<kbd>Shift</kbd>+ <kbd>S</kbd> snap · <kbd>P</kbd> portal · <kbd>R</kbd> repulsor · <kbd>T</kbd> Thor · <kbd>H</kbd> hologram · <kbd>E</kbd> leave / arrive through a portal · <kbd>G</kbd> domain · <kbd>A</kbd> arise.<br>
   Tip: step out of frame for 2 seconds after the camera starts so it learns the room behind you.
 </div>
 <script src="popup.js"></script>

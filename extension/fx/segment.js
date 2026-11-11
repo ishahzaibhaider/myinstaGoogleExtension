@@ -12,6 +12,8 @@ export class Segment {
     this.bgFrames = 0;
     this.plateFrame = -1;
     this.frameNo = 0;
+    this.emptySince = -1;
+    this.room = null;
   }
 
   setup(W, H, MW, MH) {
@@ -37,7 +39,8 @@ export class Segment {
     }
     this.tight = new Uint8Array(MW * MH);
     this.edge = new Int32Array(MW * MH);
-    this.bgFrames = 0; this.ok = false; this.plateFrame = -1; this.poseRuns = 0;
+    this.bgFrames = 0; this.ok = false; this.plateFrame = -1; this.poseRuns = 0; this.emptySince = -1;
+    if (this.room) this.applyRoom(this.room);
   }
 
   // m: MediaPipe MPMask (same size as the ML canvas)
@@ -111,9 +114,16 @@ export class Segment {
   // While the detector is still warming up, "no person found" is ambiguous,
   // so for the first runs we only learn when you are actually detected —
   // otherwise you would get burned into the plate behind yourself.
-  learnBackground(frame) {
+  //
+  // "Nobody detected" is also what the first frames look like when you walk
+  // back into the picture, before the tracker has found you. So the room is
+  // only learned from a person-free frame after it has been person-free for
+  // 1.2 s — otherwise you would be painted into the empty room.
+  learnBackground(frame, now) {
     this.poseRuns = (this.poseRuns || 0) + 1;
-    if (!this.ok && this.poseRuns < 12) return;
+    if (this.ok) this.emptySince = -1;
+    else if (this.emptySince < 0) this.emptySince = now;
+    if (!this.ok && (this.poseRuns < 12 || now - this.emptySince < 1200)) return;
     const t = this.tmpCtx;
     t.globalCompositeOperation = 'copy';
     t.drawImage(frame, 0, 0, this.W, this.H);
@@ -128,6 +138,19 @@ export class Segment {
     this.bgCtx.drawImage(this.tmp, 0, 0);
     this.bgCtx.globalAlpha = 1;
     this.bgFrames++;
+  }
+
+  // A saved photo of your empty room fills every spot never seen live
+  // (the area right behind you) with the real thing instead of a guess.
+  applyRoom(bmp) {
+    this.room = bmp;
+    if (!bmp || !this.bgCtx) return;
+    if (Math.abs(bmp.width / bmp.height - this.W / this.H) > 0.03) return;   // different camera shape
+    this.bgCtx.globalCompositeOperation = 'destination-over';
+    this.bgCtx.drawImage(bmp, 0, 0, this.W, this.H);
+    this.bgCtx.globalCompositeOperation = 'source-over';
+    this.bgFrames = Math.max(this.bgFrames, 20);
+    this.plateFrame = -1;
   }
 
   // Fills the never-seen region behind you. Each row is interpolated between

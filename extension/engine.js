@@ -12,12 +12,14 @@ import * as repulsor from './fx/repulsor.js';
 import * as thor from './fx/thor.js';
 import * as holo from './fx/hologram.js';
 import { setCustom } from './fx/destinations.js';
+import * as domain from './fx/domain.js';
+import * as arise from './fx/arise.js';
 
 const TAG = '[Infinity FX]';
 const settings = {
   enabled: true, snap: true, portal: true, repulsor: true, thor: true, hologram: true,
   entrance: true, sensitivity: 'normal', debug: false,
-  portalDest: 'shanghai', destImage: null,
+  portalDest: 'shanghai', destImage: null, domain: true, arise: true, roomPlate: null,
   delegate: 'auto',   // auto | gpu | cpu (hidden; for testing)
 };
 
@@ -42,6 +44,24 @@ async function createTask(Cls, path, opts) {
   throw lastErr;
 }
 
+// ---- saved empty room: auto-captured whenever nobody is in the picture for a
+// few seconds, reused later to fill the spot behind you with the real room.
+let lastRoomSave = -1e9;
+async function loadRoom(dataUrl) {
+  try { const bmp = await createImageBitmap(await (await fetch(dataUrl)).blob()); E.seg.applyRoom(bmp); } catch (e) {}
+}
+function maybeSaveRoom(frame, now) {
+  const sg = E.seg;
+  if (sg.ok || sg.emptySince < 0 || now - sg.emptySince < 2500 || now - lastRoomSave < 30000 || sg.poseRuns < 15) return;
+  lastRoomSave = now;
+  const c = new OffscreenCanvas(E.W, E.H);
+  c.getContext('2d').drawImage(frame, 0, 0, E.W, E.H);
+  sg.applyRoom(c);
+  c.convertToBlob({ type: 'image/jpeg', quality: 0.85 }).then((b) => new Promise((res) => {
+    const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(b);
+  })).then((url) => chrome.storage.local.set({ roomPlate: url })).catch(() => {});
+}
+
 // ---- timing (printed to the engine console while debug is on)
 const perf = { n: 0, hand: 0, pose: 0, draw: 0, total: 0, hands: 0, handFrames: 0 };
 function perfAdd(k, ms) { perf[k] += ms; }
@@ -61,8 +81,10 @@ async function loadSettings() {
     for (const k of Object.keys(ch)) if (k in settings) settings[k] = ch[k].newValue;
     if (ch.enabled) post({ type: 'active', value: settings.enabled !== false });
     if (ch.destImage) setCustom(settings.destImage);
+    if (ch.roomPlate && !ch.roomPlate.newValue) E.seg.room = null;   // "forget my room"
   });
   setCustom(settings.destImage);
+  if (settings.roomPlate) loadRoom(settings.roomPlate);
 }
 
 async function init() {
@@ -153,7 +175,7 @@ function processFrame(id, frame) {
   lastHands = hr;
   const t1 = performance.now(); perfAdd('hand', t1 - t0);
   if (hr.landmarks && hr.landmarks.length) { perf.hands += hr.landmarks.length; perf.handFrames++; }
-  const needMask = thanos.needsMask() || holo.needsMask() || thor.needsMask() || portal.hasOpen();
+  const needMask = thanos.needsMask() || holo.needsMask() || thor.needsMask() || portal.hasOpen() || domain.needsMask() || arise.needsMask();
   if (needMask || E.frameNo % 2 === 0 || E.seg.bgFrames < 20) {
     const pr = pose.detectForVideo(E.ml, ts);
     const lm = pr.landmarks && pr.landmarks[0];
@@ -161,7 +183,8 @@ function processFrame(id, frame) {
     const masks = pr.segmentationMasks || [];
     if (masks.length && lm) E.seg.update(masks[0]); else E.seg.clear();
     masks.forEach((m) => m.close && m.close());
-    E.seg.learnBackground(frame);
+    E.seg.learnBackground(frame, now);
+    maybeSaveRoom(frame, now);
   }
   perfAdd('pose', performance.now() - t1);
   E.poseAge = now - lastPoseT;
@@ -175,6 +198,8 @@ function processFrame(id, frame) {
     else if (a === 'repulsor') repulsor.key(E);
     else if (a === 'thor') thor.key(E);
     else if (a === 'hologram') holo.key(E);
+    else if (a === 'domain') domain.key(E);
+    else if (a === 'arise') arise.key(E);
   }
   warmFrames = dt < 0.12 ? warmFrames + 1 : 0;
   if (entrancePending && settings.entrance === false) entrancePending = false;
@@ -189,6 +214,8 @@ function processFrame(id, frame) {
   repulsor.update(E, G);
   thor.update(E, G);
   holo.update(E, G);
+  domain.update(E, G);
+  arise.update(E, G);
   E.particles.update(dt);
 
   if (entrancePending) {
@@ -198,7 +225,7 @@ function processFrame(id, frame) {
     post({ type: 'result', id, frame: bmp, processed: true }, [bmp]);
     return;
   }
-  const active = thanos.active() || portal.active() || repulsor.active() || thor.active() || holo.active() ||
+  const active = thanos.active() || portal.active() || repulsor.active() || thor.active() || holo.active() || domain.active() || arise.active() ||
     E.particles.n > 0 || settings.debug;
   if (!active) { perfAdd('total', performance.now() - t0); perfTick(); post({ type: 'result', id, frame, processed: false }, [frame]); return; }
 
@@ -212,16 +239,19 @@ function processFrame(id, frame) {
   else o.drawImage(frame, 0, 0, E.W, E.H);
   reset(o);
 
-  if (portal.hasOpen()) {
-    portal.drawPortals(E);
-    reset(o);
-    if (!dusting && !holo.active() && E.seg.ok && E.poseAge < 300) {
-      E.seg.personCutout(E.tmpCtx, frame, true);
-      o.drawImage(E.tmp, 0, 0);
-    }
+  // "behind you" layers, then you are cut back on top of them
+  const behind = portal.hasOpen() || domain.active() || arise.active();
+  if (portal.hasOpen()) { portal.drawPortals(E); reset(o); }
+  if (domain.active()) { domain.drawBack(E); reset(o); }
+  if (arise.active()) { arise.drawBack(E); reset(o); }
+  if (behind && !dusting && !holo.active() && E.seg.ok && E.poseAge < 300) {
+    E.seg.personCutout(E.tmpCtx, frame, true);
+    o.drawImage(E.tmp, 0, 0);
   }
   thor.drawGrade(E); reset(o);
   thanos.drawFront(E); reset(o);
+  domain.drawFront(E); reset(o);
+  arise.drawFront(E); reset(o);
   repulsor.draw(E); reset(o);
   thor.drawFront(E); reset(o);
   const entr = portal.entranceActive();
@@ -268,9 +298,9 @@ function drawDebug(hr, G) {
   o.font = `600 ${fs}px monospace`;
   const lines = [
     `fps ${fps.toFixed(0)}  ${E.W}x${E.H}  mask ${E.seg.ok ? (E.seg.personFrac * 100).toFixed(0) + '%' : '-'}  bg ${Math.min(99, E.seg.bgFrames)}  pose ${E.poseAge < 600 ? 'ok' : '-'}  particles ${E.particles.n}`,
-    `thanos ${thanos.getState()}  portal ${portal.hasOpen() ? 'open' : '-'}  repulsor ${repulsor.active() ? 'on' : '-'}  thor ${thor.active() ? 'on' : '-'}  holo ${holo.isOn() ? 'on' : '-'}`,
+    `domain ${domain.active() ? 'on' : '-'}  arise ${arise.active() ? 'on' : '-'}  room ${E.seg.room ? 'saved' : '-'}  thanos ${thanos.getState()}  portal ${portal.hasOpen() ? 'open' : '-'}  repulsor ${repulsor.active() ? 'on' : '-'}  thor ${thor.active() ? 'on' : '-'}  holo ${holo.isOn() ? 'on' : '-'}`,
     gestures.debug,
-    `${G.pinchHand ? 'PINCH ' : ''}${G.snap ? 'SNAP ' : ''}${G.pointingHand ? 'POINT ' : ''}${G.circle ? 'CIRCLE ' : ''}${G.palmHand ? 'PALM ' : ''}${G.thrust ? 'THRUST ' : ''}${G.fistUp ? 'FIST-UP ' : ''}${G.peaceToggle ? 'PEACE ' : ''}`,
+    `${G.pinchHand ? 'PINCH ' : ''}${G.snap ? 'SNAP ' : ''}${G.pointingHand ? 'POINT ' : ''}${G.circle ? 'CIRCLE ' : ''}${G.palmHand ? 'PALM ' : ''}${G.thrust ? 'THRUST ' : ''}${G.fistUp ? 'FIST-UP ' : ''}${G.peaceToggle ? 'PEACE ' : ''}${G.domainToggle ? 'DOMAIN ' : ''}${G.arise ? 'ARISE ' : ''}`,
   ];
   o.fillStyle = 'rgba(0,0,0,0.6)';
   o.fillRect(6, 6, E.W - 12, lines.length * fs * 1.35 + 10);

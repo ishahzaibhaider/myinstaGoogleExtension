@@ -89,7 +89,7 @@ const T0 = Date.now();
     fs.writeFileSync(path.join(outDir, name), Buffer.from(r.result.data, 'base64'));
   };
   const key = async (action) => {
-    const code = { snap: 'KeyS', portal: 'KeyP', repulsor: 'KeyR', thor: 'KeyT', hologram: 'KeyH', entrance: 'KeyE' }[action];
+    const code = { snap: 'KeyS', portal: 'KeyP', repulsor: 'KeyR', thor: 'KeyT', hologram: 'KeyH', entrance: 'KeyE', domain: 'KeyG', arise: 'KeyA' }[action];
     await cdp.send('Runtime.evaluate', { expression: `window.dispatchEvent(new KeyboardEvent('keydown', { code: '${code}', altKey: true, shiftKey: true, bubbles: true }))` });
   };
   const setStorage = async (obj) => {

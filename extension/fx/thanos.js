@@ -1,7 +1,7 @@
-// Thanos: the Infinity Gauntlet forms on your hand while you hold the snap
-// pose; on the snap, a flash + shockwave, and you crumble into drifting ash
+// Thanos: the six Infinity Stones light up on your hand while you hold the
+// snap pose; on the snap, a flash + shockwave, and you crumble into drifting ash
 // (with glowing embers) while the room behind you stays. Snap again to return.
-import { fbm, rand, radialFill, convexHull, blobPath, TAU, clamp, rgba } from './utils.js';
+import { fbm, rand, radialFill, TAU, clamp, rgba } from './utils.js';
 
 const D_SWEEP = 2.5;                 // s for the dissolve front to cross you
 const P_LIFE_MAX = 1.9;              // s a single ash flake drifts
@@ -94,7 +94,7 @@ function build(E) {
 
 export function snap(E, G) {
   const now = E.now;
-  if (now - lastSnap < 1200) return false;
+  if (now - lastSnap < 1600) return false;
   if (state === 'dissolving' || state === 'returning') return false;
   if (!E.seg.ok) return false;
   ensure(E);
@@ -215,37 +215,15 @@ export function drawFront(E) {
   const o = E.o;
   if (charge > 0.01 && chargeHand) {
     const h = chargeHand, c = charge, sc = h.sc;
-    const pulse = 0.85 + 0.15 * Math.sin(E.now / 90);
-    const hull = convexHull(h.lm);
-    if (hull.length >= 3) {
-      const path = blobPath(hull, sc * 0.28);
-      o.save();
-      o.globalCompositeOperation = 'overlay';
-      o.globalAlpha = 0.8 * c;
-      o.fillStyle = 'rgb(255,190,60)';
-      o.fill(path);
-      o.globalCompositeOperation = 'lighter';
-      o.globalAlpha = 0.25 * c * pulse;
-      o.fillStyle = 'rgb(255,160,40)';
-      o.filter = `blur(${Math.max(2, sc * 0.18).toFixed(1)}px)`;
-      o.fill(path);
-      o.restore();
-    }
+    const pulse = 0.92 + 0.08 * Math.sin(E.now / 140);
     o.save();
     o.globalCompositeOperation = 'lighter';
     for (const s of STONES) {
       const p = s.at === 'palm' ? { x: (h.lm[0].x + h.lm[9].x) / 2, y: (h.lm[0].y + h.lm[9].y) / 2 } : h.lm[s.at];
       const r = sc * s.s * (0.5 + 0.5 * c) * pulse;
       const [cr, cg, cb] = s.color;
-      radialFill(o, p.x, p.y, r * 3.2, [[0, rgba(cr, cg, cb, 0.55 * c)], [1, rgba(cr, cg, cb, 0)]]);
-      radialFill(o, p.x, p.y, r, [[0, rgba(255, 255, 255, 0.95 * c)], [0.35, rgba(cr, cg, cb, 0.95 * c)], [1, rgba(cr, cg, cb, 0)]]);
-      if (c > 0.6) {
-        o.globalAlpha = Math.min(1, (c - 0.6) * 2.2) * pulse;
-        const g = o.createLinearGradient(p.x - r * 5, p.y, p.x + r * 5, p.y);
-        g.addColorStop(0, rgba(cr, cg, cb, 0)); g.addColorStop(0.5, 'rgba(255,255,255,0.7)'); g.addColorStop(1, rgba(cr, cg, cb, 0));
-        o.fillStyle = g; o.fillRect(p.x - r * 5, p.y - r * 0.12, r * 10, r * 0.24);
-        o.globalAlpha = 1;
-      }
+      radialFill(o, p.x, p.y, r * 1.9, [[0, rgba(cr, cg, cb, 0.28 * c)], [1, rgba(cr, cg, cb, 0)]]);
+      radialFill(o, p.x, p.y, r * 0.8, [[0, rgba(255, 255, 255, 0.8 * c)], [0.4, rgba(cr, cg, cb, 0.9 * c)], [1, rgba(cr, cg, cb, 0)]]);
     }
     o.restore();
   }

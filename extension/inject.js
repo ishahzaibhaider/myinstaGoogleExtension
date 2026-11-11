@@ -91,10 +91,10 @@
   const canUseEngine = () => engineReady && engineActive && engineWin && inflight === 0;
 
   // Keyboard backups (focus the call tab first). Alt+Shift+<key>:
-  //   S snap   P portal   R repulsor blast   T thor   H hologram   E entrance/exit portal
+  //   S snap  P portal  R repulsor  T thor  H hologram  E entrance/exit  G domain expansion  A arise
   window.addEventListener('keydown', (e) => {
     if (!e.altKey || !e.shiftKey || e.ctrlKey || e.metaKey) return;
-    const map = { KeyS: 'snap', KeyP: 'portal', KeyR: 'repulsor', KeyT: 'thor', KeyH: 'hologram', KeyE: 'entrance' };
+    const map = { KeyS: 'snap', KeyP: 'portal', KeyR: 'repulsor', KeyT: 'thor', KeyH: 'hologram', KeyE: 'entrance', KeyG: 'domain', KeyA: 'arise' };
     const action = map[e.code];
     if (!action) return;
     toEngine({ type: 'key', action });

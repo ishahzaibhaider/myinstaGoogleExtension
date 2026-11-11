@@ -25,6 +25,8 @@ export class Gestures {
     this.palm = { since: 0, hist: [] };
     this.peace = { since: 0, lastFire: -1e9 };
     this.fist = { since: 0 };
+    this.cross = { since: 0, lastFire: -1e9 };
+    this.rise = { hist: [], lastFire: -1e9 };
     this.debug = '';
   }
 
@@ -35,16 +37,23 @@ export class Gestures {
     const G = {
       hands: [], snap: false, snapHand: null, pinchHand: null, pointingHand: null, circle: null,
       palmHand: null, thrust: false, fistUp: null, peaceToggle: false,
+      domainToggle: false, domainHand: null, arise: false,
     };
     const infos = [];
 
     // head height (for "above the head") from pose, else a fixed band
     let headY = H * 0.3, noseX = W / 2;
     let shoulderW = W * 0.25;
+    let face = null;   // { x, y, r } — hands touching your face never count as a snap
     if (poseLm) {
       const vis = (i) => (poseLm[i].visibility === undefined ? 1 : poseLm[i].visibility);
       if (vis(0) > 0.5) { headY = poseLm[0].y * H; noseX = poseLm[0].x * W; }
       if (vis(11) > 0.5 && vis(12) > 0.5) shoulderW = Math.max(10, Math.abs(poseLm[11].x - poseLm[12].x) * W);
+      if (vis(0) > 0.5) {
+        const ear = Math.hypot((poseLm[7].x - poseLm[8].x) * W, (poseLm[7].y - poseLm[8].y) * H);
+        const eye = Math.hypot((poseLm[2].x - poseLm[5].x) * W, (poseLm[2].y - poseLm[5].y) * H);
+        face = { x: noseX, y: headY, r: Math.max(ear * 0.6, eye * 2, shoulderW * 0.25) };
+      }
     }
 
     const seen = new Set();
@@ -67,38 +76,47 @@ export class Gestures {
         open: nExt === 4 && thumbOut && up,
         pinch: pinchD < sens.pinch,
         pointing: f.index && !f.middle && !f.ring && !f.pinky && pinchD > 0.6,
-        peace: f.index && f.middle && !f.ring && !f.pinky,
+        peace: f.index && f.middle && !f.ring && !f.pinky && d2(lm[8], lm[12]) / sc > 0.32,
+        crossed: crossedFingers(lm, f, sc),
         high: center.y < headY - 0.05 * H,
+        nearFace: !!face && [4, 8, 12, 16, 20].filter((t) => Math.hypot(lm[t].x - face.x, lm[t].y - face.y) < face.r).length >= 3,
+        conf: (hr.handedness && hr.handedness[idx] && hr.handedness[idx][0] && hr.handedness[idx][0].score) || 1,
       };
       G.hands.push(hand);
 
       // ---- snap state machine (per hand)
+      // A snap only counts if it is deliberate:
+      //   1. the snap pose (thumb on middle finger) is held ≥ 120 ms, not covering your face,
+      //      with a confidently tracked hand  → "armed" (the stones appear)
+      //   2. then, within 420 ms, the fingers spring apart AND the middle finger
+      //      clearly snaps down toward the palm. The click sound only makes a
+      //      slightly smaller curl enough — it never fires a snap on its own.
       let key = label; if (seen.has(key)) key = label + idx;
       seen.add(key);
-      const hs = this.handState[key] || (this.handState[key] = { frames: 0, lastPinch: -1e9, d12: 0, lastSeen: now });
+      const hs = this.handState[key] || (this.handState[key] = { frames: 0, since: 0, lastPinch: -1e9, d12: 0, lastSeen: now });
       hs.lastSeen = now;
       const d12w = d2(lm[12], lm[0]) / sc;
-      if (hand.pinch) {
+      const ok = !hand.nearFace && hand.conf > 0.6;
+      if (hand.pinch && ok) {
+        if (!hs.frames) hs.since = now;
         hs.frames++; hs.lastPinch = now; hs.d12 = d12w;
-        if (hs.frames >= 2) G.pinchHand = hand;
+        if (hs.frames >= 2 && now - hs.since >= 120) G.pinchHand = hand;
       } else {
-        const recent = now - hs.lastPinch < 380;
+        const armed = hs.frames >= 2 && hs.lastPinch - hs.since >= 120;
+        const recent = now - hs.lastPinch < 420;
         const released = pinchD > sens.pinch + 0.2;
-        const curled = d12w < hs.d12 - sens.curl;
         const heard = now - this.lastAudioSpike < 350;
-        if (hs.frames >= 2 && recent && released && (curled || heard)) {
+        const curl = hs.d12 - d12w;
+        const curled = curl > sens.curl || (heard && curl > sens.curl * 0.4);
+        if (ok && armed && recent && released && curled) {
           G.snap = true; G.snapHand = hand; hs.frames = 0;
         }
-        if (!recent) hs.frames = 0;
+        if (!recent || !ok) hs.frames = 0;
       }
-      infos.push(`${label[0]}:${hand.fist ? 'fist' : hand.open ? 'open' : hand.pointing ? 'point' : hand.peace ? 'peace' : hand.pinch ? 'pinch' : nExt} tm=${pinchD.toFixed(2)}`);
+      infos.push(`${label[0]}:${hand.fist ? 'fist' : hand.open ? 'open' : hand.pointing ? 'point' : hand.peace ? 'peace' : hand.crossed ? 'cross' : hand.pinch ? 'pinch' : nExt} tm=${pinchD.toFixed(2)}`);
     });
 
-    // A hand that vanished right after a pinch + a snap sound = snap too.
     for (const [key, hs] of Object.entries(this.handState)) {
-      if (!seen.has(key) && hs.frames >= 2 && now - hs.lastPinch < 500 && now - this.lastAudioSpike < 350) {
-        G.snap = true; hs.frames = 0;
-      }
       if (now - hs.lastSeen > 2000) delete this.handState[key];
     }
 
@@ -119,7 +137,8 @@ export class Gestures {
     }
 
     // ---- open palm → repulsor
-    const open = G.hands.filter((h) => h.open).sort((a, b) => b.sc - a.sc)[0];
+    const opens = G.hands.filter((h) => h.open);
+    const open = opens.length === 1 ? opens[0] : null;   // two open hands = ARISE, not a repulsor
     if (open) {
       if (!this.palm.since) { this.palm.since = now; this.palm.hist.length = 0; }
       this.palm.hist.push({ t: now, sc: open.sc });
@@ -163,6 +182,27 @@ export class Gestures {
       }
     } else this.peace.since = 0;
 
+    // ---- crossed index + middle finger held → Gojo's Domain Expansion
+    const cross = G.hands.find((h) => h.crossed);
+    if (cross) {
+      if (!this.cross.since) this.cross.since = now;
+      if (now - this.cross.since > 450 && now - this.cross.lastFire > 2500) {
+        G.domainToggle = true; G.domainHand = cross; this.cross.lastFire = now; this.cross.since = 0;
+      }
+    } else this.cross.since = 0;
+
+    // ---- both hands open, lifted upward together → ARISE
+    const lifted = G.hands.filter((h) => h.nExt >= 3);
+    if (lifted.length === 2) {
+      const y = (lifted[0].center.y + lifted[1].center.y) / 2;
+      this.rise.hist.push({ t: now, y });
+      while (this.rise.hist.length && now - this.rise.hist[0].t > 1300) this.rise.hist.shift();
+      const lowest = this.rise.hist.reduce((m, h) => Math.max(m, h.y), 0);
+      if (lowest - y > H * 0.22 && now - this.rise.lastFire > 3000) {
+        G.arise = true; this.rise.lastFire = now; this.rise.hist.length = 0;
+      }
+    } else this.rise.hist.length = 0;
+
     this.debug = infos.join(' | ') || 'no hands';
     return G;
   }
@@ -192,4 +232,18 @@ export class Gestures {
     if (Math.abs(total) < 5.2) return null;
     return { x: cx, y: cy, r: rMean };
   }
+}
+
+// Index and middle finger up and crossed (Gojo's sign), ring + pinky folded.
+// MediaPipe either puts the two tips on top of each other or swaps their order
+// across the hand, so both count.
+function crossedFingers(lm, f, sc) {
+  if (!f.index || f.ring || f.pinky) return false;
+  if (d2(lm[8], lm[6]) / sc < 0.35) return false;       // index really extended
+  const ax = lm[17].x - lm[5].x, ay = lm[17].y - lm[5].y, al = Math.hypot(ax, ay) || 1;
+  const proj = (p) => ((p.x - lm[5].x) * ax + (p.y - lm[5].y) * ay) / al;
+  const tips = d2(lm[8], lm[12]) / sc;
+  const swapped = proj(lm[8]) > proj(lm[12]);
+  const midUp = d2(lm[12], lm[0]) > d2(lm[10], lm[0]) * 1.02;
+  return midUp && (tips < 0.22 || (swapped && tips < 0.5)) && d2(lm[4], lm[12]) / sc > 0.5;
 }

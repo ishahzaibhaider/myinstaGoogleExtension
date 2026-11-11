@@ -1,10 +1,10 @@
 const DEFAULTS = {
   enabled: true, snap: true, portal: true, repulsor: true, thor: true, hologram: true,
   entrance: true, sensitivity: 'normal', unmirror: false, debug: false,
-  portalDest: 'shanghai', destImage: null,
+  portalDest: 'shanghai', destImage: null, domain: true, arise: true,
 };
 const $ = (id) => document.getElementById(id);
-const TOGGLES = ['enabled', 'snap', 'portal', 'repulsor', 'thor', 'hologram', 'entrance', 'unmirror', 'debug'];
+const TOGGLES = ['enabled', 'snap', 'portal', 'repulsor', 'thor', 'hologram', 'domain', 'arise', 'entrance', 'unmirror', 'debug'];
 
 chrome.storage.local.get(DEFAULTS, (s) => {
   for (const k of TOGGLES) {
@@ -50,3 +50,12 @@ chrome.storage.local.get(DEFAULTS, (s) => {
     $('destNote').textContent = NOTES[sel.value];
   });
 });
+
+// ---- saved empty room
+function showRoom(saved) {
+  $('roomNote').textContent = saved ? 'Saved ✓ — the spot behind you is your real room' : 'Step out of frame for 3 s and it saves your room';
+  $('forgetRoom').disabled = !saved;
+}
+chrome.storage.local.get({ roomPlate: null }, (s) => showRoom(!!s.roomPlate));
+chrome.storage.onChanged.addListener((ch) => { if (ch.roomPlate) showRoom(!!ch.roomPlate.newValue); });
+$('forgetRoom').addEventListener('click', () => chrome.storage.local.set({ roomPlate: null }));
